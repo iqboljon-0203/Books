@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <title>Books</title>
+</head>
+
+<body>
+    <style>
+        #buttons {
+            display: flex;
+            justify-content: space-between;
+
+        }
+    </style>
+    <div class="container-fluid">
+        <br>
+        <div id="liveAlertPlaceholder"></div>
+    </div>
+    <h1 class="text-center">Books</h1>
+    <br>
+    <div class="container" id="buttons">
+        <button class="btn btn-primary" id="getTable">Get table (method: GET)</button>
+        <button class="btn btn-primary" id="addBook">Add book
+            (method: POST)</button>
+        <button class="btn btn-primary" id="UpdateBook">Update
+            book (method: UPDATE)</button>
+    </div>
+    <br>
+    <div class="container">
+        <table class="table table-hover" id="myTable">
+            <thead>
+                <tr>
+                    <td></td>
+                    <td>#</td>
+                    <td>Name</td>
+                    <td>Autor</td>
+                </tr>
+            </thead>
+            
+        </table>
+    </div>
+    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Add book to list</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group input-group-sm mb-3">
+                        <span class="input-group-text">Name</span>
+                        <input type="text" class="form-control" name="InputNameN" id="inputName"
+                            aria-label="Sizing example input" aria-describedby="inputGroup-sizing-sm">
+                    </div>
+                    <div class="input-group input-group-sm mb-3">
+                        <span class="input-group-text">Autor</span>
+                        <input type="text" class="form-control" name="InputAutorN" id="inputAutor"
+                            aria-label="Sizing example input" aria-describedby="inputGroup-sizing-sm">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="saveChanges">Save
+                        changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+
+    <script>
+        const getTable = document.getElementById('getTable');
+        const addBook = document.getElementById('addBook');
+        const updateButton = document.getElementById('UpdateBook');
+        const myTable = document.getElementById('myTable');
+        const saveChanges = document.getElementById('saveChanges');
+        const inputName = document.getElementById('inputName');
+        const inputAutor = document.getElementById('inputAutor');
+
+        let books = null;
+        let action = null;
+
+        let myModal = new bootstrap.Modal(document.getElementById("exampleModal"), {});
+
+
+
+        function renderTable(books) {
+            myTable.innerHTML = `
+            <thead>
+                <tr>
+                    <td></td>
+                    <td>#</td>
+                    <td>Name</td>
+                    <td>Autor</td>
+                </tr>
+            </thead>
+            
+            `;
+
+            let myTbody = document.createElement('tbody');
+
+            for (let i = 0; i < books.length; i++) {
+
+                let newLine = document.createElement('tr');
+                i % 2 != 0 ? newLine.className = '' : newLine.className = 'table-light';
+                newLine.innerHTML = `
+                    <td><input type="radio" name="index" value="${books[i].id}"></td>
+                    <td>${books[i].id}</td>
+                    <td>${books[i].name}</td>
+                    <td>${books[i].autor}</td>
+                `;
+                myTbody.appendChild(newLine);
+            }
+
+            myTable.appendChild(myTbody);
+        }
+
+
+
+        const alertPlaceholder = document.getElementById('liveAlertPlaceholder')
+
+        function showAlert(text) {
+            const alert = (message, type) => {
+                const wrapper = document.createElement('div')
+                wrapper.innerHTML = [
+                    `<div class="alert alert-${type} alert-dismissible" role="alert">`,
+                    `   <div>${message}</div>`,
+                    '   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>',
+                    '</div>'
+                ].join('')
+
+                alertPlaceholder.append(wrapper);
+            }
+
+
+
+            alert(`${text}`, 'success');
+
+
+
+            inputName.value = '';
+            inputAutor.value = '';
+
+        }
+
+        function addNewBook() {
+
+            let name = document.getElementById('inputName').value;
+            let autor = document.getElementById('inputAutor').value;
+
+
+
+            let newBook = {
+                name: name,
+                autor: autor
+            }
+
+            axios({
+                method: 'post',
+                url: '/books',
+                data: {
+                    name: name,
+                    autor: autor
+                }
+            });
+
+            
+        };
+
+        function getCurrentBook() {
+            const radioButtons = document.getElementsByName('index');
+            let id = null;
+
+            for (i = 0; i < radioButtons.length; i++) {
+                if (radioButtons[i].checked) {
+                    id = radioButtons[i].value;
+                    id = parseInt(id);
+                    break;
+                }
+            };
+
+            if (id != null) {
+
+                updateButton.innerHTML = `
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                Loading...
+            `;
+                updateButton.setAttribute("disabled", "disabled");
+
+                axios({
+                    method: 'POST',
+                    url: '/getbook',
+                    data: {
+                        id: id
+                    }
+                }).then((data) => {
+                    inputName.value = data.data.name;
+                    inputAutor.value = data.data.autor;
+                    updateButton.removeAttribute('disabled')
+                    updateButton.innerHTML = `Update book (method: UPDATE)`;
+                    myModal.show();
+                })
+
+
+
+            } else {
+                alert('Elementni tanlang!')
+            }
+            
+            return id;
+        }
+
+        function updateBook(id) {
+            let name = inputName.value;
+            let autor = inputAutor.value;
+
+
+            axios({
+                method: 'put',
+                url: '/books',
+                data: {
+                    id: id,
+                    name: name,
+                    autor: autor
+                }
+            })
+
+        };
+
+        addBook.onclick = (e) => {
+            action = 'add';
+            inputName.value = '';
+            inputAutor.value = '';
+            myModal.show();
+            
+        };
+
+        updateButton.onclick = (e) => {
+            action = 'update';
+            getCurrentBook();
+
+        };
+
+
+        saveChanges.onclick = (e) => {
+            if (action == 'add') {
+                addNewBook();
+                showAlert(`Yangi kitob muvofoqiyatli qo'shildi!`);
+                action = null;
+
+            } else if (action == 'update') {
+                let id = getCurrentBook();
+                updateBook(id);
+                showAlert(`Kitob o'zgartirildi!`);
+                action = null;
+            } 
+        };
+
+        getTable.onclick = (e) => {
+
+            fetch('/books')
+                .then((response) => {
+                    return response.json();
+                })
+                .then((data) => {
+                    renderTable(data.books);
+                });
+
+        };
+
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.0.0-alpha.1/axios.min.js"
+        integrity="sha512-xIPqqrfvUAc/Cspuj7Bq0UtHNo/5qkdyngx6Vwt+tmbvTLDszzXM0G6c91LXmGrRx8KEPulT+AfOOez+TeVylg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+</body>
+
+</html>
